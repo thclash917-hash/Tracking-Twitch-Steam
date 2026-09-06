@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Classement Global - Gaming Trends</title>
-    <!-- Inclusion de Chart.js pour le graphique d'évolution -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root {
@@ -52,20 +51,6 @@
             font-size: 15px;
             box-shadow: 0 4px 15px rgba(0,0,0,0.3);
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            animation: pulse-glow 3s infinite;
-        }
-        @keyframes pulse-glow {
-            0% { box-shadow: 0 0 0 0 rgba(145, 70, 255, 0.4); }
-            70% { box-shadow: 0 0 0 10px rgba(145, 70, 255, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(145, 70, 255, 0); }
-        }
-        .interactive-logo.shop {
-            animation: pulse-glow-shop 3s infinite;
-        }
-        @keyframes pulse-glow-shop {
-            0% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.4); }
-            70% { box-shadow: 0 0 0 10px rgba(34, 197, 94, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
         }
         .interactive-logo:hover {
             transform: translateY(-4px) scale(1.03);
@@ -211,19 +196,22 @@
         .badge-steam { background-color: rgba(37, 99, 235, 0.2); color: #60a5fa; }
         .badge-mobile { background-color: rgba(34, 197, 94, 0.2); color: #4ade80; }
         .trend { color: var(--success); font-weight: 500; }
+        
+        /* Style corrigé pour les favoris (blancs par défaut, jaunes si actif) */
         .fav-btn {
             background: none;
             border: none;
             cursor: pointer;
             font-size: 22px;
-            color: #ffffff; /* Blanc par défaut */
+            color: #475569; /* Gris foncé inactif */
             transition: transform 0.2s, color 0.2s;
         }
         .fav-btn:hover {
             transform: scale(1.2);
+            color: #cbd5e1;
         }
         .fav-active {
-            color: #facc15 !important; /* Jaune quand actif */
+            color: #facc15 !important; /* Jaune vif actif */
         }
     </style>
 </head>
@@ -243,7 +231,6 @@
             <p>Suivi en direct des tendances Twitch & Steam</p>
         </header>
 
-        <!-- Graphique d'évolution des top jeux en direct -->
         <div class="chart-container">
             <canvas id="trendsChart"></canvas>
         </div>
@@ -275,7 +262,7 @@
                         <th onclick="sortTable('name')">Jeu ↕</th>
                         <th onclick="sortTable('platform')">Plateforme ↕</th>
                         <th onclick="sortTable('raw_viewers')">Volume / Stats ↕</th>
-                        <th onclick="sortTable('ratio')">Ratio % ↕</th>
+                        <th onclick="sortTable('ratio')">Tendance ↕</th>
                     </tr>
                 </thead>
                 <tbody id="games-tbody">
@@ -303,14 +290,26 @@
 
                 allGames = await response.json();
                 
-                allGames = allGames.map((game, index) => ({
+                // Nettoyage et tri initial par nombre de spectateurs décroissant
+                allGames = allGames.map(game => ({
                     ...game,
-                    raw_viewers: game.raw_viewers || 0,
-                    volume: game.volume || "Actif sur Twitch",
-                    ratio: (Math.max(1, (106 - (index + 1)) * 0.15)).toFixed(2)
+                    raw_viewers: Number(game.raw_viewers) || 0,
+                    volume: game.volume || "0 spectateurs"
                 }));
 
-                renderChart(allGames.slice(0, 6)); // Top 6 pour le graphique
+                allGames.sort((a, b) => b.raw_viewers - a.raw_viewers);
+
+                // Calcul du ratio de tendance par rapport au premier du classement
+                const maxViewers = allGames.length > 0 ? (allGames[0].raw_viewers || 1) : 1;
+                allGames = allGames.map((game, index) => {
+                    let trendScore = ((game.raw_viewers / maxViewers) * 100).toFixed(1);
+                    return {
+                        ...game,
+                        ratio: trendScore + '%'
+                    };
+                });
+
+                renderChart(allGames.slice(0, 6));
                 renderTable();
             } catch (e) {
                 console.error(e);
@@ -320,20 +319,17 @@
 
         function renderChart(topGames) {
             const ctx = document.getElementById('trendsChart').getContext('2d');
-            
             const labels = topGames.map(g => g.name);
             const dataValues = topGames.map(g => g.raw_viewers);
 
-            if (myChart) {
-                myChart.destroy();
-            }
+            if (myChart) myChart.destroy();
 
             myChart = new Chart(ctx, {
                 type: 'bar',
                 data: {
                     labels: labels,
                     datasets: [{
-                        label: 'Volume en direct (Joueurs / Spectateurs)',
+                        label: 'Volume en direct',
                         data: dataValues,
                         backgroundColor: 'rgba(145, 70, 255, 0.6)',
                         borderColor: '#9146ff',
@@ -344,9 +340,7 @@
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    plugins: {
-                        legend: { labels: { color: '#f8fafc' } }
-                    },
+                    plugins: { legend: { labels: { color: '#f8fafc' } } },
                     scales: {
                         x: { ticks: { color: '#94a3b8' }, grid: { color: '#1e293b' } },
                         y: { ticks: { color: '#94a3b8' }, grid: { color: '#1e293b' } }
@@ -403,7 +397,7 @@
                     </td>
                     <td><span class="badge ${badgeClass}">${game.platform}</span></td>
                     <td>${game.volume}</td>
-                    <td class="trend">${game.ratio}%</td>
+                    <td class="trend">${game.ratio}</td>
                 `;
                 tbody.appendChild(tr);
             });
