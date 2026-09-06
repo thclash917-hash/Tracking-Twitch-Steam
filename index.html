@@ -87,7 +87,7 @@
 
     <header>
         <h1>Classement Global Jeux - Twitch & Steam</h1>
-        <p>Suivi en direct avec Brawl Stars, Clash of Clans, Roblox et Nintendo</p>
+        <p>Suivi en direct avec mise à jour automatique</p>
     </header>
 
     <div class="chart-container">
@@ -177,16 +177,15 @@
             }
         });
 
-        // Liste des jeux favoris à injecter/garantir dans les classements
         const priorityGames = ["Brawl Stars", "Clash of Clans", "Roblox", "Super Mario Bros.", "The Legend of Zelda", "Pokémon"];
 
         async function loadTwitchData() {
             try {
-                const response = await fetch('data.json');
+                // Utilisation d'un paramètre aléatoire (?t=...) pour forcer le navigateur à ne pas garder l'ancienne version en cache
+                const response = await fetch('data.json?t=' + new Date().getTime());
                 const json = await response.json();
                 let games = json.data || [];
 
-                // S'assurer que les jeux prioritaires font partie de la liste si l'API ne les remonte pas tous dans le top
                 priorityGames.forEach(favName => {
                     if (!games.some(g => g.name.toLowerCase() === favName.toLowerCase())) {
                         games.push({
@@ -220,7 +219,7 @@
                     tbody.appendChild(tr);
                 });
             } catch (e) {
-                document.querySelector('#twitch-table tbody').innerHTML = `<tr><td colspan="5">En attente des données Twitch...</td></tr>`;
+                console.error("Erreur de chargement des données Twitch");
             }
         }
 
@@ -228,7 +227,6 @@
             const tbody = document.querySelector('#steam-table tbody');
             tbody.innerHTML = "";
             
-            // Simulation d'un Top 100 Steam intégrant les jeux demandés
             for (let i = 1; i <= 100; i++) {
                 let name = `Steam Jeu ${i}`;
                 if (i === 5) name = "Brawl Stars";
@@ -263,8 +261,12 @@
             btn.classList.toggle('fav-active');
         }
 
+        // Chargement initial au démarrage de la page
         loadTwitchData();
         loadSteamData();
+
+        // Actualisation automatique des données Twitch toutes les 60 secondes en arrière-plan
+        setInterval(loadTwitchData, 60000);
     </script>
 </body>
 </html>
