@@ -5,6 +5,38 @@ import json
 CLIENT_ID = os.environ.get("TWITCH_CLIENT_ID")
 CLIENT_SECRET = os.environ.get("TWITCH_CLIENT_SECRET")
 
+
+# ---------------------------------------------------------------------------
+# Utilitaires communs
+# ---------------------------------------------------------------------------
+
+def load_old_data():
+    """Charge le game.json existant pour calculer les variations."""
+    old_data = {}
+    if os.path.exists("game.json"):
+        try:
+            with open("game.json", "r", encoding="utf-8") as f:
+                old_list = json.load(f)
+                old_data = {item["name"]: item for item in old_list}
+        except Exception:
+            pass
+    return old_data
+
+
+def compute_variation(old_data, name, raw_metric):
+    old_item = old_data.get(name, {})
+    old_metric = old_item.get("raw_viewers", raw_metric)
+    if old_metric == 0:
+        old_metric = raw_metric
+    variation_val = round(((raw_metric - old_metric) / old_metric) * 100, 1) if old_metric > 0 else 0.0
+    variation_str = f"+{variation_val}%" if variation_val >= 0 else f"{variation_val}%"
+    return variation_val, variation_str
+
+
+# ---------------------------------------------------------------------------
+# TWITCH — logique originale, INCHANGÉE
+# ---------------------------------------------------------------------------
+
 def get_twitch_token():
     if not CLIENT_ID or not CLIENT_SECRET:
         return None
@@ -18,6 +50,7 @@ def get_twitch_token():
     if response.status_code == 200:
         return response.json().get("access_token")
     return None
+
 
 def fetch_twitch_games():
     token = get_twitch_token()
@@ -43,7 +76,7 @@ def fetch_twitch_games():
     # Récupérer les top jeux de Twitch (pagination pour obtenir un grand nombre de catégories, ex: 100)
     top_games_url = "https://api.twitch.tv/helix/games/top?first=100"
     response = requests.get(top_games_url, headers=headers)
-    
+
     if response.status_code != 200:
         print("Erreur lors de la récupération du top Twitch.")
         return []
@@ -53,14 +86,14 @@ def fetch_twitch_games():
     for game in twitch_games:
         game_name = game["name"]
         game_id = game["id"]
-        
+
         # Formater l'image Twitch correctement (remplacement des dimensions)
         image_url = game.get("box_art_url", "").replace("{width}", "300").replace("{height}", "400")
 
         # Récupérer les streams en direct pour compter les spectateurs réels
         streams_url = f"https://api.twitch.tv/helix/streams?game_id={game_id}&first=100"
         streams_resp = requests.get(streams_url, headers=headers)
-        
+
         viewers = 0
         if streams_resp.status_code == 200:
             streams = streams_resp.json().get("data", [])
@@ -110,11 +143,125 @@ def fetch_twitch_games():
 
     return results
 
+
+# ---------------------------------------------------------------------------
+# STEAM — nouveau : via l'API publique SteamSpy (gratuite, sans clé)
+# ---------------------------------------------------------------------------
+
+def fetch_steam_games():
+    old_data = load_old_data()
+    results = []
+
+    try:
+        url = "https://steamspy.com/api.php?request=top100in2weeks"
+        response = requests.get(url, timeout=15, headers={"User-Agent": "Mozilla/5.0"})
+        if response.status_code != 200:
+            print("Erreur SteamSpy:", response.status_code)
+            return []
+        data = response.json()
+    except Exception as e:
+        print("Erreur lors de la récupération SteamSpy:", e)
+        return []
+
+    # SteamSpy renvoie un dict {appid: {...}} -> on le convertit en liste triée par joueurs en direct (ccu)
+    games_list = list(data.values())
+    games_list.sort(key=lambda g: g.get("ccu", 0), reverse=True)
+
+    for game in games_list[:20]:
+        appid = game.get("appid")
+        name = game.get("name", "Inconnu")
+        ccu = game.get("ccu", 0)
+
+        image_url = f"https://cdn.akamai.steamstatic.com/steam/apps/{appid}/header.jpg"
+
+        variation_val, variation_str = compute_variation(old_data, name, ccu)
+
+        results.append({
+            "name": name,
+            "platform": "Steam",
+            "raw_viewers": ccu,
+            "volume": f"{ccu:,} joueurs en jeu".replace(",", " "),
+            "variationValue": variation_val,
+            "variation": variation_str,
+            "image": image_url
+        })
+
+    return results
+
+
+# ---------------------------------------------------------------------------
+# MOBILE — nouveau : liste organisée (pas d'API gratuite de classement mobile en temps réel)
+# Les volumes sont des estimations statiques. Pour du vrai temps réel il faudrait
+# une source payante type data.ai / Sensor Tower.
+# ---------------------------------------------------------------------------
+
+MOBILE_GAMES_POOL = [
+    ("Brawl Stars", 12500000),
+    ("Clash of Clans", 9800000),
+    ("Clash Royale", 8600000),
+    ("PUBG MOBILE", 15200000),
+    ("Free Fire", 21000000),
+    ("Mobile Legends: Bang Bang", 13400000),
+    ("Candy Crush Saga", 11200000),
+    ("Genshin Impact", 7300000),
+    ("Roblox", 25000000),
+    ("Call of Duty: Mobile", 9700000),
+    ("Subway Surfers", 8100000),
+    ("Honkai: Star Rail", 4200000),
+    ("Pokémon GO", 6100000),
+    ("Among Us", 3900000),
+    ("Coin Master", 5200000),
+    ("Toon Blast", 3600000),
+    ("Royal Match", 4800000),
+    ("EA Sports FC Mobile", 5300000),
+    ("Stumble Guys", 4400000),
+    ("8 Ball Pool", 3800000),
+    ("Fortnite", 6700000),
+    ("Minecraft", 7900000),
+    ("Wild Rift", 5100000),
+    ("Garena Free Fire MAX", 6800000),
+    ("Homescapes", 3300000),
+]
+
+
+def fetch_mobile_games():
+    old_data = load_old_data()
+    results = []
+
+    for name, base_volume in MOBILE_GAMES_POOL:
+        variation_val, variation_str = compute_variation(old_data, name, base_volume)
+        image_url = f"https://api.dicebear.com/7.x/shapes/svg?seed={name.replace(' ', '')}"
+
+        results.append({
+            "name": name,
+            "platform": "Mobile",
+            "raw_viewers": base_volume,
+            "volume": f"{base_volume:,} joueurs actifs (estimation)".replace(",", " "),
+            "variationValue": variation_val,
+            "variation": variation_str,
+            "image": image_url
+        })
+
+    return results
+
+
+# ---------------------------------------------------------------------------
+# MAIN
+# ---------------------------------------------------------------------------
+
 if __name__ == "__main__":
-    updated_games = fetch_twitch_games()
+    twitch_games = fetch_twitch_games()
+    steam_games = fetch_steam_games()
+    mobile_games = fetch_mobile_games()
+
+    updated_games = twitch_games + steam_games + mobile_games
+
     if updated_games:
         with open("game.json", "w", encoding="utf-8") as f:
             json.dump(updated_games, f, ensure_ascii=False, indent=4)
         print(f"Fichier game.json mis à jour avec succès ({len(updated_games)} jeux/catégories) !")
+        print(f" - Twitch : {len(twitch_games)}")
+        print(f" - Steam  : {len(steam_games)}")
+        print(f" - Mobile : {len(mobile_games)}")
     else:
         print("Erreur lors de la mise à jour.")
