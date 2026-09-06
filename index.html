@@ -420,7 +420,15 @@
             <p>Suivi intelligent des tendances Gaming, Twitch & Mobile</p>
         </header>
 
-        <div class="chart-container">
+               <div class="chart-container">
+            <div style="display:flex; justify-content:flex-end; margin-bottom:10px;">
+                <select id="chart-filter" onchange="updateChart()" style="background: var(--card-bg); color: var(--text-color); border:1px solid var(--border-color); padding:6px 12px; border-radius:8px; font-size:13px; cursor:pointer;">
+                    <option value="Twitch" selected>Twitch</option>
+                    <option value="Steam">Steam</option>
+                    <option value="Mobile">Mobile</option>
+                    <option value="all">Toutes plateformes</option>
+                </select>
+            </div>
             <canvas id="trendsChart"></canvas>
         </div>
 
