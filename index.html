@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="fr" data-theme="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -10,19 +10,37 @@
             --bg-color: #0b0f19;
             --card-bg: #131b2e;
             --text-color: #f8fafc;
+            --text-muted: #94a3b8;
             --border-color: #1e293b;
             --twitch: #9146ff;
             --steam: #2563eb;
             --success: #22c55e;
             --danger: #ef4444;
             --hot: #f59e0b;
+            --modal-bg: rgba(11, 15, 25, 0.85);
         }
+
+        [data-theme="light"] {
+            --bg-color: #f1f5f9;
+            --card-bg: #ffffff;
+            --text-color: #0f172a;
+            --text-muted: #64748b;
+            --border-color: #e2e8f0;
+            --twitch: #7c3aed;
+            --steam: #1d4ed8;
+            --success: #16a34a;
+            --danger: #dc2626;
+            --hot: #d97706;
+            --modal-bg: rgba(15, 23, 42, 0.6);
+        }
+
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background-color: var(--bg-color);
             color: var(--text-color);
             margin: 0;
             padding: 20px;
+            transition: background-color 0.3s, color 0.3s;
         }
         .container {
             max-width: 1150px;
@@ -31,7 +49,32 @@
         header {
             text-align: center;
             margin-bottom: 25px;
+            position: relative;
         }
+        .top-bar {
+            display: flex;
+            justify-content: flex-end;
+            margin-bottom: 15px;
+        }
+        .theme-toggle {
+            background: var(--card-bg);
+            border: 2px solid var(--border-color);
+            color: var(--text-color);
+            padding: 8px 16px;
+            border-radius: 30px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: 0.2s;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .theme-toggle:hover {
+            border-color: var(--twitch);
+        }
+
         .brand-logos {
             display: flex;
             justify-content: center;
@@ -51,7 +94,7 @@
             text-decoration: none;
             font-weight: 600;
             font-size: 14px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
             transition: all 0.3s ease;
         }
         .interactive-logo:hover {
@@ -67,16 +110,17 @@
             border: 1px solid var(--border-color);
             padding: 20px;
             margin-bottom: 25px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.4);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
             height: 320px;
+            transition: background-color 0.3s, border-color 0.3s;
         }
         .update-info {
             text-align: center;
             font-size: 13px;
-            color: #94a3b8;
+            color: var(--text-muted);
             margin-bottom: 20px;
-            background: rgba(255, 255, 255, 0.02);
-            padding: 8px;
+            background: var(--card-bg);
+            padding: 10px;
             border-radius: 6px;
             border: 1px solid var(--border-color);
         }
@@ -106,6 +150,7 @@
         }
         .tab-btn.active {
             background-color: var(--twitch);
+            color: #ffffff;
             border-color: var(--twitch);
         }
         .search-box {
@@ -139,7 +184,8 @@
             border-radius: 12px;
             border: 1px solid var(--border-color);
             overflow: hidden;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.4);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            transition: background-color 0.3s, border-color 0.3s;
         }
         .card-header {
             padding: 20px;
@@ -164,31 +210,35 @@
             vertical-align: middle;
         }
         th {
-            background-color: rgba(255,255,255,0.02);
+            background-color: rgba(128,128,128,0.05);
             font-size: 13px;
-            color: #94a3b8;
+            color: var(--text-muted);
             text-transform: uppercase;
             letter-spacing: 0.5px;
             cursor: pointer;
             user-select: none;
         }
-        th:hover { color: #fff; background-color: rgba(255,255,255,0.04); }
+        th:hover { color: var(--text-color); background-color: rgba(128,128,128,0.1); }
+        
+        tbody tr {
+            cursor: pointer;
+            transition: background-color 0.15s;
+        }
+        tbody tr:hover {
+            background-color: rgba(145, 70, 255, 0.05);
+        }
+
         .game-cell {
             display: flex;
             align-items: center;
             gap: 15px;
         }
         .game-img {
-            width: 55px;
-            height: 75px;
+            width: 50px;
+            height: 68px;
             object-fit: cover;
             border-radius: 6px;
             background: #222;
-        }
-        .game-info-container {
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
         }
         .game-name {
             font-weight: 600;
@@ -212,9 +262,9 @@
             font-weight: 500;
             display: inline-block;
         }
-        .badge-twitch { background-color: rgba(145, 70, 255, 0.2); color: #c084fc; }
-        .badge-steam { background-color: rgba(37, 99, 235, 0.2); color: #60a5fa; }
-        .badge-mobile { background-color: rgba(34, 197, 94, 0.2); color: #4ade80; }
+        .badge-twitch { background-color: rgba(145, 70, 255, 0.15); color: var(--twitch); }
+        .badge-steam { background-color: rgba(37, 99, 235, 0.15); color: var(--steam); }
+        .badge-mobile { background-color: rgba(34, 197, 94, 0.15); color: var(--success); }
         
         .variation {
             font-weight: 600;
@@ -233,11 +283,110 @@
             border: none;
             cursor: pointer;
             font-size: 20px;
-            color: #475569;
+            color: var(--text-muted);
             transition: transform 0.2s, color 0.2s;
         }
-        .fav-btn:hover { transform: scale(1.2); color: #cbd5e1; }
+        .fav-btn:hover { transform: scale(1.2); }
         .fav-active { color: #facc15 !important; }
+
+        /* Effet Squelette (Skeleton Loading) */
+        .skeleton {
+            background: linear-gradient(90deg, rgba(128,128,128,0.1) 25%, rgba(128,128,128,0.2) 50%, rgba(128,128,128,0.1) 75%);
+            background-size: 200% 100%;
+            animation: loading 1.5s infinite;
+            border-radius: 4px;
+            color: transparent !important;
+        }
+        @keyframes loading {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+
+        /* Notifications Toasts */
+        #toast-container {
+            position: fixed;
+            bottom: 25px;
+            right: 25px;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .toast {
+            background: var(--card-bg);
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+            padding: 12px 20px;
+            border-radius: 8px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            font-size: 14px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            animation: slideIn 0.3s ease, fadeOut 0.3s ease 2.2s forwards;
+        }
+        @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        @keyframes fadeOut { to { opacity: 0; transform: translateY(10px); } }
+
+        /* Fenêtre Modale */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--modal-bg);
+            backdrop-filter: blur(5px);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+        .modal-overlay.open {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        .modal-content {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            width: 90%;
+            max-width: 450px;
+            padding: 30px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+            transform: translateY(20px);
+            transition: transform 0.3s ease;
+            position: relative;
+        }
+        .modal-overlay.open .modal-content {
+            transform: translateY(0);
+        }
+        .modal-close {
+            position: absolute;
+            top: 15px; right: 15px;
+            background: none; border: none;
+            color: var(--text-muted);
+            font-size: 20px; cursor: pointer;
+        }
+        .modal-close:hover { color: var(--text-color); }
+        .modal-header {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .modal-img {
+            width: 70px; height: 95px; object-fit: cover; border-radius: 8px;
+        }
+        .modal-body p {
+            margin: 10px 0;
+            font-size: 14px;
+            color: var(--text-muted);
+        }
+        .modal-body strong {
+            color: var(--text-color);
+        }
 
         @media(max-width: 768px) {
             body { padding: 10px; }
@@ -249,6 +398,12 @@
 <body>
 
     <div class="container">
+        <div class="top-bar">
+            <button class="theme-toggle" onclick="toggleTheme()">
+                <span id="theme-icon">🌙</span> <span id="theme-text">Mode Clair</span>
+            </button>
+        </div>
+
         <header>
             <div class="brand-logos">
                 <a href="https://www.twitch.tv/fire_bs2" target="_blank" class="interactive-logo">
@@ -257,7 +412,7 @@
                 <a href="https://shop-fire-zeta.vercel.app/" target="_blank" class="interactive-logo shop">
                     <span>🛒</span> Boutique
                 </a>
-                <a href="#" onclick="alert('Module Shorts & Clips automatisés prêt pour vos publications !'); return false;" class="interactive-logo shorts">
+                <a href="#" onclick="showToast('🎬 Module Shorts & Clips prêt pour tes publications !', 'hot'); return false;" class="interactive-logo shorts">
                     <span>🎬</span> Shorts & Clips
                 </a>
             </div>
@@ -304,9 +459,47 @@
                         </tr>
                     </thead>
                     <tbody id="games-tbody">
-                        <tr><td colspan="6" style="text-align: center; padding: 40px;">Chargement des données...</td></tr>
+                        <!-- Squelettes de chargement initiaux -->
+                        <tr>
+                            <td><div class="skeleton" style="width:20px;height:20px;"></div></td>
+                            <td><div class="skeleton" style="width:25px;height:20px;"></div></td>
+                            <td><div class="game-cell"><div class="skeleton" style="width:50px;height:68px;"></div><div class="skeleton" style="width:120px;height:20px;"></div></div></td>
+                            <td><div class="skeleton" style="width:70px;height:22px;border-radius:20px;"></div></td>
+                            <td><div class="skeleton" style="width:90px;height:20px;"></div></td>
+                            <td><div class="skeleton" style="width:60px;height:22px;border-radius:6px;"></div></td>
+                        </tr>
+                        <tr>
+                            <td><div class="skeleton" style="width:20px;height:20px;"></div></td>
+                            <td><div class="skeleton" style="width:25px;height:20px;"></div></td>
+                            <td><div class="game-cell"><div class="skeleton" style="width:50px;height:68px;"></div><div class="skeleton" style="width:150px;height:20px;"></div></div></td>
+                            <td><div class="skeleton" style="width:70px;height:22px;border-radius:20px;"></div></td>
+                            <td><div class="skeleton" style="width:90px;height:20px;"></div></td>
+                            <td><div class="skeleton" style="width:60px;height:22px;border-radius:6px;"></div></td>
+                        </tr>
                     </tbody>
                 </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Conteneur de Notifications Toast -->
+    <div id="toast-container"></div>
+
+    <!-- Fenêtre Modale de Détails -->
+    <div class="modal-overlay" id="gameModal" onclick="closeModal(event)">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <button class="modal-close" onclick="closeModal()">&times;</button>
+            <div class="modal-header">
+                <img id="modal-img" src="" class="modal-img" alt="">
+                <div>
+                    <h2 id="modal-title" style="margin: 0 0 5px 0; font-size: 20px;">Nom du jeu</h2>
+                    <span id="modal-platform" class="badge badge-twitch">Plateforme</span>
+                </div>
+            </div>
+            <div class="modal-body">
+                <p>📊 <strong>Volume Actuel :</strong> <span id="modal-volume">-</span></p>
+                <p>📈 <strong>Tendance / Variation :</strong> <span id="modal-variation">-</span></p>
+                <p>⭐ <strong>Statut Favori :</strong> <span id="modal-fav-status">Non</span></p>
             </div>
         </div>
     </div>
@@ -318,6 +511,43 @@
         let favorites = JSON.parse(localStorage.getItem('gaming_favorites')) || [];
         let sortDirections = { name: 'asc', platform: 'asc', raw_viewers: 'desc', variationValue: 'desc' };
         let myChart = null;
+
+        // Gestion du Thème Sombre / Clair
+        function toggleTheme() {
+            const html = document.documentElement;
+            const currentTheme = html.getAttribute('data-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            html.setAttribute('data-theme', newTheme);
+            localStorage.setItem('gaming_theme', newTheme);
+            
+            document.getElementById('theme-icon').innerText = newTheme === 'dark' ? '🌙' : '☀️';
+            document.getElementById('theme-text').innerText = newTheme === 'dark' ? 'Mode Clair' : 'Mode Sombre';
+            
+            if (myChart) {
+                // Mettre à jour les couleurs du graphique Chart.js selon le thème
+                myChart.options.scales.x.ticks.color = newTheme === 'dark' ? '#94a3b8' : '#64748b';
+                myChart.options.scales.y.ticks.color = newTheme === 'dark' ? '#94a3b8' : '#64748b';
+                myChart.options.scales.x.grid.color = newTheme === 'dark' ? '#1e293b' : '#e2e8f0';
+                myChart.options.scales.y.grid.color = newTheme === 'dark' ? '#1e293b' : '#e2e8f0';
+                myChart.update();
+            }
+        }
+
+        // Charger le thème enregistré au démarrage
+        const savedTheme = localStorage.getItem('gaming_theme') || 'dark';
+        document.documentElement.setAttribute('data-theme', savedTheme);
+        document.getElementById('theme-icon').innerText = savedTheme === 'dark' ? '🌙' : '☀️';
+        document.getElementById('theme-text').innerText = savedTheme === 'dark' ? 'Mode Clair' : 'Mode Sombre';
+
+        // Système de Notification Toast
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            toast.innerHTML = `<span>${type === 'success' ? '⭐' : '🔔'}</span> ${message}`;
+            container.appendChild(toast);
+            setTimeout(() => toast.remove(), 2500);
+        }
 
         async function loadGames() {
             try {
@@ -350,6 +580,7 @@
             const ctx = document.getElementById('trendsChart').getContext('2d');
             const labels = topGames.map(g => g.name);
             const dataValues = topGames.map(g => g.raw_viewers);
+            const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
 
             if (myChart) myChart.destroy();
 
@@ -369,10 +600,10 @@
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    plugins: { legend: { labels: { color: '#f8fafc' } } },
+                    plugins: { legend: { labels: { color: isDark ? '#f8fafc' : '#0f172a' } } },
                     scales: {
-                        x: { ticks: { color: '#94a3b8' }, grid: { color: '#1e293b' } },
-                        y: { ticks: { color: '#94a3b8' }, grid: { color: '#1e293b' } }
+                        x: { ticks: { color: isDark ? '#94a3b8' : '#64748b' }, grid: { color: isDark ? '#1e293b' : '#e2e8f0' } },
+                        y: { ticks: { color: isDark ? '#94a3b8' : '#64748b' }, grid: { color: isDark ? '#1e293b' : '#e2e8f0' } }
                     }
                 }
             });
@@ -411,13 +642,19 @@
             document.getElementById('fav-count').innerText = favorites.length;
 
             if (displayedGames.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; padding: 40px; color: #94a3b8;">Aucun élément trouvé.</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; padding: 40px; color: var(--text-muted);">Aucun élément trouvé.</td></tr>`;
                 return;
             }
 
             displayedGames.forEach((game, index) => {
                 const rank = index + 1;
                 const tr = document.createElement('tr');
+                tr.onclick = (e) => {
+                    // Ne pas ouvrir la modale si on clique directement sur l'étoile
+                    if (!e.target.closest('button')) {
+                        openGameModal(game);
+                    }
+                };
                 
                 let badgeClass = 'badge-twitch';
                 if (game.platform === 'Steam') badgeClass = 'badge-steam';
@@ -430,7 +667,7 @@
                 const varArrow = game.variationValue >= 0 ? '📈' : '📉';
 
                 tr.innerHTML = `
-                    <td><button class="fav-btn ${isFav ? 'fav-active' : ''}" onclick="toggleFav('${game.name.replace(/'/g, "\\'")}')">⭐</button></td>
+                    <td><button class="fav-btn ${isFav ? 'fav-active' : ''}" onclick="toggleFav(event, '${game.name.replace(/'/g, "\\'")}')">⭐</button></td>
                     <td><strong>#${rank}</strong></td>
                     <td>
                         <div class="game-cell">
@@ -463,14 +700,39 @@
             renderTable();
         }
 
-        function toggleFav(gameName) {
+        function toggleFav(event, gameName) {
+            event.stopPropagation();
             if (favorites.includes(gameName)) {
                 favorites = favorites.filter(name => name !== gameName);
+                showToast(`Retiré des favoris : ${gameName}`, 'default');
             } else {
                 favorites.push(gameName);
+                showToast(`Ajouté aux favoris : ${gameName}`, 'success');
             }
             localStorage.setItem('gaming_favorites', JSON.stringify(favorites));
             renderTable();
+        }
+
+        // Gestion de la Fenêtre Modale
+        function openGameModal(game) {
+            document.getElementById('modal-img').src = game.image;
+            document.getElementById('modal-title').innerText = game.name;
+            const platformBadge = document.getElementById('modal-platform');
+            platformBadge.innerText = game.platform;
+            
+            document.getElementById('modal-volume').innerText = game.volume;
+            document.getElementById('modal-variation').innerText = game.variation;
+            
+            const isFav = favorites.includes(game.name);
+            document.getElementById('modal-fav-status').innerText = isFav ? '⭐ Oui (Dans vos favoris)' : 'Non';
+
+            document.getElementById('gameModal').classList.add('open');
+        }
+
+        function closeModal(event) {
+            if (!event || event.target.id === 'gameModal' || event.target.className === 'modal-close') {
+                document.getElementById('gameModal').classList.remove('open');
+            }
         }
 
         function sortTable(key) {
