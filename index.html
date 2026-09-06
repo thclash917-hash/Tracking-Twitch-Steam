@@ -576,7 +576,7 @@
 
                 allGames.sort((a, b) => b.raw_viewers - a.raw_viewers);
 
-                renderChart(allGames.slice(0, 6));
+                updateChart();
                 renderTable();
             } catch (e) {
                 console.error(e);
