@@ -59,6 +59,12 @@
             color: #94a3b8;
             text-transform: uppercase;
             letter-spacing: 0.5px;
+            cursor: pointer;
+            user-select: none;
+        }
+        th:hover {
+            color: #fff;
+            background-color: rgba(255,255,255,0.04);
         }
         .game-cell {
             display: flex;
@@ -108,10 +114,10 @@
                     <tr>
                         <th>Fav</th>
                         <th>#</th>
-                        <th>Jeu</th>
-                        <th>Plateforme</th>
+                        <th onclick="sortTable('name')">Jeu ↕</th>
+                        <th onclick="sortTable('platform')">Plateforme ↕</th>
                         <th>Volume / Stats</th>
-                        <th>Tendance</th>
+                        <th onclick="sortTable('ratio')">Ratio % ↕</th>
                     </tr>
                 </thead>
                 <tbody id="games-tbody">
@@ -122,44 +128,75 @@
     </div>
 
     <script>
+        let allGames = [];
+        let sortDirections = { name: 'asc', platform: 'asc', ratio: 'desc' };
+
         async function loadGames() {
             try {
-                // Correction : on cible game.json au lieu de games.json
                 const response = await fetch('game.json?t=' + new Date().getTime());
-                const games = await response.json();
+                allGames = await response.json();
                 
-                const tbody = document.getElementById('games-tbody');
-                const countSpan = document.getElementById('game-count');
-                tbody.innerHTML = '';
-                countSpan.innerText = `${games.length} jeux`;
+                // Ajout d'un ratio proportionnel/dynamique pour alimenter la colonne
+                allGames = allGames.map((game, index) => ({
+                    ...game,
+                    ratio: (Math.max(1, (101 - (index + 1)) * 0.15)).toFixed(2)
+                }));
 
-                games.forEach((game, index) => {
-                    const rank = index + 1;
-                    const tr = document.createElement('tr');
-
-                    let badgeClass = game.platform === 'Twitch' ? 'badge-twitch' : 'badge-steam';
-
-                    tr.innerHTML = `
-                        <td><button class="fav-btn" onclick="toggleFav(this)">⭐</button></td>
-                        <td><strong>#${rank}</strong></td>
-                        <td>
-                            <div class="game-cell">
-                                <img src="${game.image}" class="game-img" alt="${game.name}" onerror="this.src='https://picsum.photos/100/133'">
-                                <div>
-                                    <div class="game-name">${game.name}</div>
-                                </div>
-                            </div>
-                        </td>
-                        <td><span class="badge ${badgeClass}">${game.platform}</span></td>
-                        <td>${game.volume || ''}</td>
-                        <td class="trend">En direct</td>
-                    `;
-                    tbody.appendChild(tr);
-                });
+                renderTable(allGames);
             } catch (e) {
                 console.error(e);
                 document.getElementById('games-tbody').innerHTML = `<tr><td colspan="6" style="text-align:center; color: #ef4444;">Erreur de chargement des données.</td></tr>`;
             }
+        }
+
+        function renderTable(games) {
+            const tbody = document.getElementById('games-tbody');
+            const countSpan = document.getElementById('game-count');
+            tbody.innerHTML = '';
+            countSpan.innerText = `${games.length} jeux & catégories`;
+
+            games.forEach((game, index) => {
+                const rank = index + 1;
+                const tr = document.createElement('tr');
+                let badgeClass = game.platform === 'Twitch' ? 'badge-twitch' : 'badge-steam';
+
+                tr.innerHTML = `
+                    <td><button class="fav-btn" onclick="toggleFav(this)">⭐</button></td>
+                    <td><strong>#${rank}</strong></td>
+                    <td>
+                        <div class="game-cell">
+                            <img src="${game.image}" class="game-img" alt="${game.name}" onerror="this.src='https://picsum.photos/100/133'">
+                            <div>
+                                <div class="game-name">${game.name}</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td><span class="badge ${badgeClass}">${game.platform}</span></td>
+                    <td>${game.volume || ''}</td>
+                    <td class="trend">${game.ratio}%</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function sortTable(key) {
+            let direction = sortDirections[key];
+            allGames.sort((a, b) => {
+                let valA = a[key] || '';
+                let valB = b[key] || '';
+
+                if (key === 'ratio') {
+                    valA = parseFloat(valA);
+                    valB = parseFloat(valB);
+                }
+
+                if (valA < valB) return direction === 'asc' ? -1 : 1;
+                if (valA > valB) return direction === 'asc' ? 1 : -1;
+                return 0;
+            });
+
+            sortDirections[key] = direction === 'asc' ? 'desc' : 'asc';
+            renderTable(allGames);
         }
 
         function toggleFav(btn) {
