@@ -8,6 +8,8 @@ on:
 jobs:
   update:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write  # <-- Indispensable pour autoriser l'action à commiter et pousser game.json
     steps:
       - name: Récupérer le code du dépôt
         uses: actions/checkout@v4
