@@ -300,7 +300,7 @@
                             <th onclick="sortTable('name')">Jeu ↕</th>
                             <th onclick="sortTable('platform')">Plateforme ↕</th>
                             <th onclick="sortTable('raw_viewers')">Volume / Stats ↕</th>
-                            <th onclick="sortTable('variation')">Variation ↕</th>
+                            <th onclick="sortTable('variationValue')">Variation ↕</th>
                         </tr>
                     </thead>
                     <tbody id="games-tbody">
@@ -313,10 +313,10 @@
 
     <script>
         let allGames = [];
-        let activeFilter = 'all'; // 'all', 'favorites', 'Twitch', 'Steam', 'Mobile'
+        let activeFilter = 'all';
         let searchQuery = '';
         let favorites = JSON.parse(localStorage.getItem('gaming_favorites')) || [];
-        let sortDirections = { name: 'asc', platform: 'asc', raw_viewers: 'desc', variation: 'desc' };
+        let sortDirections = { name: 'asc', platform: 'asc', raw_viewers: 'desc', variationValue: 'desc' };
         let myChart = null;
 
         async function loadGames() {
@@ -326,20 +326,15 @@
                 let updateTime = lastModifiedHeader ? new Date(lastModifiedHeader).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
                 document.getElementById('last-update').innerText = updateTime;
 
-                let rawData = await response.json();
+                allGames = await response.json();
                 
-                // Simulation intelligente des variations de croissance pour les tests (génère une tendance crédible)
-                allGames = rawData.map((game, index) => {
-                    // Simulation d'une variation aléatoire réaliste entre -8% et +24%
-                    const randomVar = (Math.sin(index + Date.now()) * 15 + 5).toFixed(1);
-                    return {
-                        ...game,
-                        raw_viewers: Number(game.raw_viewers) || 0,
-                        volume: game.volume || "0 spectateurs",
-                        variationValue: parseFloat(randomVar),
-                        variation: (randomVar >= 0 ? `+${randomVar}%` : `${randomVar}%`)
-                    };
-                });
+                allGames = allGames.map(game => ({
+                    ...game,
+                    raw_viewers: Number(game.raw_viewers) || 0,
+                    volume: game.volume || "0 spectateurs",
+                    variationValue: Number(game.variationValue) || 0,
+                    variation: game.variation || "0.0%"
+                }));
 
                 allGames.sort((a, b) => b.raw_viewers - a.raw_viewers);
 
@@ -390,7 +385,6 @@
 
             let displayedGames = allGames;
 
-            // Application des filtres
             if (activeFilter === 'favorites') {
                 displayedGames = displayedGames.filter(game => favorites.includes(game.name));
                 document.getElementById('table-title').innerText = 'Mes Favoris';
@@ -407,7 +401,6 @@
                 document.getElementById('table-title').innerText = 'Tendances combinées';
             }
 
-            // Recherche textuelle
             if (searchQuery.trim() !== '') {
                 displayedGames = displayedGames.filter(game => 
                     game.name.toLowerCase().includes(searchQuery.toLowerCase())
@@ -431,7 +424,7 @@
                 if (game.platform.includes('Mobile') || game.platform.includes('PC/Mobile')) badgeClass = 'badge-mobile';
 
                 const isFav = favorites.includes(game.name);
-                const isHot = index === 0; // Le #1 gagne le badge HOT
+                const isHot = index === 0;
 
                 const varClass = game.variationValue >= 0 ? 'var-up' : 'var-down';
                 const varArrow = game.variationValue >= 0 ? '📈' : '📉';
@@ -486,9 +479,9 @@
                 let valA = a[key] || '';
                 let valB = b[key] || '';
 
-                if (key === 'raw_viewers' || key === 'variationValue' || key === 'variation') {
-                    valA = Number(a.variationValue || a.raw_viewers || 0);
-                    valB = Number(b.variationValue || b.raw_viewers || 0);
+                if (key === 'raw_viewers' || key === 'variationValue') {
+                    valA = Number(a[key] || 0);
+                    valB = Number(b[key] || 0);
                 }
 
                 if (valA < valB) return direction === 'asc' ? -1 : 1;
