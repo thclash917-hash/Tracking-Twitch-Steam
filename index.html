@@ -64,6 +64,16 @@
             height: 24px;
             object-fit: contain;
         }
+        .update-info {
+            text-align: center;
+            font-size: 13px;
+            color: #94a3b8;
+            margin-bottom: 15px;
+            background: rgba(255, 255, 255, 0.02);
+            padding: 8px;
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+        }
         .controls-bar {
             display: flex;
             justify-content: space-between;
@@ -214,6 +224,10 @@
             <p>Suivi en direct des tendances Twitch & Steam</p>
         </header>
 
+        <div class="update-info">
+            🔄 Actualisation automatique toutes les 30 minutes via GitHub Actions | Dernière mise à jour : <span id="last-update">Chargement...</span>
+        </div>
+
         <div class="controls-bar">
             <div class="tabs">
                 <button class="tab-btn active" onclick="switchTab('all')">Tous les jeux</button>
@@ -257,12 +271,17 @@
         async function loadGames() {
             try {
                 const response = await fetch('game.json?t=' + new Date().getTime());
+                
+                // Récupération de l'heure de dernière modification du fichier sur le serveur (si dispo) ou l'heure actuelle
+                const lastModifiedHeader = response.headers.get('last-modified');
+                let updateTime = lastModifiedHeader ? new Date(lastModifiedHeader).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                document.getElementById('last-update').innerText = updateTime;
+
                 allGames = await response.json();
                 
                 allGames = allGames.map((game, index) => ({
                     ...game,
-                    // Correction du volume pour tous les jeux si non défini
-                    volume: game.volume || "Spectateurs en direct",
+                    volume: game.volume === "Prioritaire" ? "Spectateurs en direct" : (game.volume || "Spectateurs en direct"),
                     ratio: (Math.max(1, (106 - (index + 1)) * 0.15)).toFixed(2)
                 }));
 
@@ -280,12 +299,10 @@
 
             let displayedGames = allGames;
 
-            // Filtrage par onglet
             if (currentTab === 'favorites') {
                 displayedGames = displayedGames.filter(game => favorites.includes(game.name));
             }
 
-            // Filtrage par recherche
             if (searchQuery.trim() !== '') {
                 displayedGames = displayedGames.filter(game => 
                     game.name.toLowerCase().includes(searchQuery.toLowerCase())
