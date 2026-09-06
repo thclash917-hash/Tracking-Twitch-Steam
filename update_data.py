@@ -58,9 +58,19 @@ def fetch_twitch_games():
     return games
 
 def main():
+    # Charger les anciennes données pour comparer l'historique (si le fichier existe)
+    old_games_map = {}
+    if os.path.exists("game.json"):
+        try:
+            with open("game.json", "r", encoding="utf-8") as f:
+                old_list = json.load(f)
+                for og in old_list:
+                    old_games_map[og["name"]] = og.get("raw_viewers", 0)
+        except:
+            pass
+
     twitch_games = fetch_twitch_games()
     
-    # Jeux fixes / Jeux mobiles importants
     fixed_games = [
         {"name": "Counter-Strike 2", "platform": "Steam", "image": "https://static-cdn.jtvnw.net/ttv-boxart/32399_IGDB-100x133.jpg", "volume": "1 084 344 joueurs", "raw_viewers": 1084344},
         {"name": "Dota 2", "platform": "Steam", "image": "https://static-cdn.jtvnw.net/ttv-boxart/29595_IGDB-100x133.jpg", "volume": "765 773 joueurs", "raw_viewers": 765773},
@@ -70,13 +80,31 @@ def main():
         {"name": "Clash of Clans", "platform": "Mobile", "image": "https://static-cdn.jtvnw.net/ttv-boxart/15671_IGDB-100x133.jpg", "volume": "80 000 spectateurs", "raw_viewers": 80000}
     ]
 
-    # Fusion en évitant les doublons si le jeu est déjà dans l'API Twitch
     existing_names = {g["name"] for g in twitch_games}
     all_games = twitch_games + [g for g in fixed_games if g["name"] not in existing_names]
 
+    # Calcul de la vraie variation par rapport à l'ancien relevé
+    for game in all_games:
+        name = game["name"]
+        current_val = game["raw_viewers"]
+        old_val = old_games_map.get(name, current_val) # S'il est nouveau, variation à 0%
+        
+        if old_val > 0:
+            diff_percent = ((current_val - old_val) / old_val) * 100
+        else:
+            diff_percent = 0.0
+            
+        game["variationValue"] = round(diff_percent, 1)
+        if diff_percent > 0:
+            game["variation"] = f"+{diff_percent:.1f}%"
+        elif diff_percent < 0:
+            game["variation"] = f"{diff_percent:.1f}%"
+        else:
+            game["variation"] = "0.0%"
+
     with open("game.json", "w", encoding="utf-8") as f:
         json.dump(all_games, f, ensure_ascii=False, indent=4)
-    print(f"Succès : {len(all_games)} jeux enregistrés dans game.json")
+    print(f"Succès : {len(all_games)} jeux enregistrés avec calcul de variation réel.")
 
 if __name__ == "__main__":
     main()
