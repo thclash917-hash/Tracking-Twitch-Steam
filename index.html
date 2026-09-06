@@ -126,7 +126,8 @@
     <script>
         async function loadGames() {
             try {
-                const response = await fetch('games.json?t=' + new Date().getTime());
+                // Lecture directe de data.json
+                const response = await fetch('data.json?t=' + new Date().getTime());
                 const games = await response.json();
                 
                 const tbody = document.getElementById('games-tbody');
@@ -158,7 +159,7 @@
                     tbody.appendChild(tr);
                 });
             } catch (e) {
-                document.getElementById('games-tbody').innerHTML = `<tr><td colspan="6" style="text-align:center; color: #ef4444;">En attente de la première exécution du script Python...</td></tr>`;
+                document.getElementById('games-tbody').innerHTML = `<tr><td colspan="6" style="text-align:center; color: #ef4444;">Erreur de chargement des données.</td></tr>`;
             }
         }
 
@@ -167,7 +168,6 @@
         }
 
         loadGames();
-        // Actualisation auto toutes les 60 secondes
         setInterval(loadGames, 60000);
     </script>
 </body>
