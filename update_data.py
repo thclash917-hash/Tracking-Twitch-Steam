@@ -64,12 +64,12 @@ def main():
     twitch_games = fetch_twitch_games()
     
     steam_games = [
-        {"name": "Counter-Strike 2", "platform": "Steam", "image": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/730/header.jpg", "volume": "1 084 344 joueurs", "raw_viewers": 1084344},
-        {"name": "Dota 2", "platform": "Steam", "image": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/570/header.jpg", "volume": "765 773 joueurs", "raw_viewers": 765773},
-        {"name": "PUBG: BATTLEGROUNDS", "platform": "Steam", "image": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/578080/header.jpg", "volume": "212 048 joueurs", "raw_viewers": 212048},
-        {"name": "Brawl Stars", "platform": "Mobile/Cross", "image": "https://picsum.photos/100/133?random=brawl", "volume": "Jeu Mobile Populaire", "raw_viewers": 150000},
-        {"name": "Roblox", "platform": "PC/Mobile", "image": "https://picsum.photos/100/133?random=roblox", "volume": "Jeu Multijoueur", "raw_viewers": 300000},
-        {"name": "Clash of Clans", "platform": "Mobile", "image": "https://picsum.photos/100/133?random=coc", "volume": "Jeu Mobile Populaire", "raw_viewers": 80000}
+        {"name": "Counter-Strike 2", "platform": "Steam", "image": "https://static-cdn.jtvnw.net/ttv-boxart/32399_IGDB-100x133.jpg", "volume": "1 084 344 joueurs", "raw_viewers": 1084344},
+        {"name": "Dota 2", "platform": "Steam", "image": "https://static-cdn.jtvnw.net/ttv-boxart/29595_IGDB-100x133.jpg", "volume": "765 773 joueurs", "raw_viewers": 765773},
+        {"name": "PUBG: BATTLEGROUNDS", "platform": "Steam", "image": "https://static-cdn.jtvnw.net/ttv-boxart/493057_IGDB-100x133.jpg", "volume": "212 048 joueurs", "raw_viewers": 212048},
+        {"name": "Brawl Stars", "platform": "Mobile/Cross", "image": "https://static-cdn.jtvnw.net/ttv-boxart/512953_IGDB-100x133.jpg", "volume": "Jeu Mobile Populaire", "raw_viewers": 150000},
+        {"name": "Roblox", "platform": "PC/Mobile", "image": "https://static-cdn.jtvnw.net/ttv-boxart/23020_IGDB-100x133.jpg", "volume": "Jeu Multijoueur", "raw_viewers": 300000},
+        {"name": "Clash of Clans", "platform": "Mobile", "image": "https://static-cdn.jtvnw.net/ttv-boxart/15671_IGDB-100x133.jpg", "volume": "Jeu Mobile Populaire", "raw_viewers": 80000}
     ]
 
     all_games = steam_games + twitch_games
