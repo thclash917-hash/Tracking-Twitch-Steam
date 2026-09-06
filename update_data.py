@@ -52,10 +52,10 @@ def main():
 
     all_games = steam_games + twitch_games
 
-    # Enregistrement dans data.json (qui correspond à votre dépôt)
-    with open("data.json", "w", encoding="utf-8") as f:
+    # Enregistrement dans game.json pour correspondre à ton site
+    with open("game.json", "w", encoding="utf-8") as f:
         json.dump(all_games, f, ensure_ascii=False, indent=4)
-    print(f"Succès : {len(all_games)} jeux enregistrés dans data.json")
+    print(f"Succès : {len(all_games)} jeux enregistrés dans game.json")
 
 if __name__ == "__main__":
     main()
