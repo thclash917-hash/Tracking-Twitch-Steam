@@ -22,33 +22,54 @@ def fetch_twitch_games():
         "Authorization": f"Bearer {token}"
     }
     
-    # Demande des 100 catégories les plus populaires sur Twitch
-    url = "https://api.twitch.tv/helix/games/top?first=100"
-    response = requests.get(url, headers=headers)
+    # 1. Récupérer les top catégories
+    url_games = "https://api.twitch.tv/helix/games/top?first=100"
+    res_games = requests.get(url_games, headers=headers)
     
+    # 2. Récupérer les flux en direct pour sommer les spectateurs par jeu
+    game_viewers = {}
+    url_streams = "https://api.twitch.tv/helix/streams?first=100"
+    res_streams = requests.get(url_streams, headers=headers)
+    if res_streams.status_code == 200:
+        for stream in res_streams.json().get("data", []):
+            g_name = stream.get("game_name")
+            v_count = stream.get("viewer_count", 0)
+            game_viewers[g_name] = game_viewers.get(g_name, 0) + v_count
+
     games = []
-    if response.status_code == 200:
-        data = response.json().get("data", [])
+    if res_games.status_code == 200:
+        data = res_games.json().get("data", [])
         for item in data:
+            name = item.get("name")
             box_art = item.get("box_art_url", "").replace("{width}", "100").replace("{height}", "133")
+            viewers = game_viewers.get(name, 0)
+            
+            # Formatage du nombre de spectateurs
+            if viewers > 0:
+                volume_str = f"{viewers:,} spectateurs".replace(",", " ")
+            else:
+                volume_str = "Actif sur Twitch"
+
             games.append({
-                "name": item.get("name"),
+                "name": name,
                 "platform": "Twitch",
                 "image": box_art,
-                "volume": "Spectateurs en direct"
+                "volume": volume_str,
+                "raw_viewers": viewers
             })
+            
     return games
 
 def main():
     twitch_games = fetch_twitch_games()
     
     steam_games = [
-        {"name": "Counter-Strike 2", "platform": "Steam", "image": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/730/header.jpg", "volume": "1 084 344 joueurs"},
-        {"name": "Dota 2", "platform": "Steam", "image": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/570/header.jpg", "volume": "765 773 joueurs"},
-        {"name": "PUBG: BATTLEGROUNDS", "platform": "Steam", "image": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/578080/header.jpg", "volume": "212 048 joueurs"},
-        {"name": "Brawl Stars", "platform": "Mobile/Cross", "image": "https://picsum.photos/100/133?random=brawl", "volume": "Prioritaire"},
-        {"name": "Roblox", "platform": "PC/Mobile", "image": "https://picsum.photos/100/133?random=roblox", "volume": "Prioritaire"},
-        {"name": "Clash of Clans", "platform": "Mobile", "image": "https://picsum.photos/100/133?random=coc", "volume": "Prioritaire"}
+        {"name": "Counter-Strike 2", "platform": "Steam", "image": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/730/header.jpg", "volume": "1 084 344 joueurs", "raw_viewers": 1084344},
+        {"name": "Dota 2", "platform": "Steam", "image": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/570/header.jpg", "volume": "765 773 joueurs", "raw_viewers": 765773},
+        {"name": "PUBG: BATTLEGROUNDS", "platform": "Steam", "image": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/578080/header.jpg", "volume": "212 048 joueurs", "raw_viewers": 212048},
+        {"name": "Brawl Stars", "platform": "Mobile/Cross", "image": "https://picsum.photos/100/133?random=brawl", "volume": "Jeu Mobile Populaire", "raw_viewers": 150000},
+        {"name": "Roblox", "platform": "PC/Mobile", "image": "https://picsum.photos/100/133?random=roblox", "volume": "Jeu Multijoueur", "raw_viewers": 300000},
+        {"name": "Clash of Clans", "platform": "Mobile", "image": "https://picsum.photos/100/133?random=coc", "volume": "Jeu Mobile Populaire", "raw_viewers": 80000}
     ]
 
     all_games = steam_games + twitch_games
