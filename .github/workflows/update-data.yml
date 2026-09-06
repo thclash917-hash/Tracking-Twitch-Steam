@@ -1,0 +1,33 @@
+name: Mettre à jour les données Twitch
+
+on:
+  schedule:
+    - cron: '*/30 * * * *'
+  workflow_dispatch:
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Récupérer le code du dépôt
+        uses: actions/checkout@v4
+
+      - name: Télécharger les données de l'API Twitch
+        env:
+          TWITCH_CLIENT_ID: ${{ secrets.TWITCH_CLIENT_ID }}
+          TWITCH_CLIENT_SECRET: ${{ secrets.TWITCH_CLIENT_SECRET }}
+        run: |
+          TOKEN_RESPONSE=$(curl -s -X POST "https://id.twitch.tv/oauth2/token?client_id=$TWITCH_CLIENT_ID&client_secret=$TWITCH_CLIENT_SECRET&grant_type=client_credentials")
+          ACCESS_TOKEN=$(echo $TOKEN_RESPONSE | jq -r '.access_token')
+
+          GAMES_RESPONSE=$(curl -s -H "Client-ID: $TWITCH_CLIENT_ID" -H "Authorization: Bearer $ACCESS_TOKEN" "https://api.twitch.tv/helix/games/top?first=100")
+          
+          echo $GAMES_RESPONSE > data.json
+
+      - name: Enregistrer et pousser les modifications sur le site
+        run: |
+          git config --global user.name "GitHub Action Bot"
+          git config --global user.email "action@github.com"
+          git add data.json
+          git commit -m "Mise à jour automatique des données Twitch [skip ci]" || exit 0
+          git push
