@@ -27,7 +27,51 @@
         }
         header {
             text-align: center;
-            margin-bottom: 30px;
+            margin-bottom: 25px;
+            position: relative;
+        }
+        .top-links {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+        .top-links a {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            padding: 8px 16px;
+            border-radius: 30px;
+            color: var(--text-color);
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 14px;
+            transition: 0.2s;
+        }
+        .top-links a:hover {
+            border-color: var(--twitch);
+            transform: translateY(-2px);
+        }
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .tab-btn {
+            background-color: var(--card-bg);
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 14px;
+        }
+        .tab-btn.active {
+            background-color: var(--twitch);
+            border-color: var(--twitch);
         }
         .card {
             background-color: var(--card-bg);
@@ -91,22 +135,32 @@
         }
         .badge-twitch { background-color: rgba(145, 70, 255, 0.2); color: #c084fc; }
         .badge-steam { background-color: rgba(37, 99, 235, 0.2); color: #60a5fa; }
+        .badge-mobile { background-color: rgba(34, 197, 94, 0.2); color: #4ade80; }
         .trend { color: var(--success); font-weight: 500; }
-        .fav-btn { background: none; border: none; cursor: pointer; font-size: 18px; }
-        .fav-active { color: gold; }
+        .fav-btn { background: none; border: none; cursor: pointer; font-size: 20px; color: #475569; transition: 0.2s; }
+        .fav-active { color: #facc15; }
     </style>
 </head>
 <body>
 
     <div class="container">
         <header>
+            <div class="top-links">
+                <a href="https://www.twitch.tv/fire_bs2" target="_blank">🟣 Mon Twitch (fire_bs2)</a>
+                <a href="https://shop-fire-zeta.vercel.app/" target="_blank">🛒 Boutique Jeux Mobiles</a>
+            </div>
             <h1>Classement Global</h1>
             <p>Suivi en direct des tendances Twitch & Steam</p>
         </header>
 
+        <div class="tabs">
+            <button class="tab-btn active" onclick="switchTab('all')">Tous les jeux</button>
+            <button class="tab-btn" onclick="switchTab('favorites')">⭐ Mes Favoris (<span id="fav-count">0</span>)</button>
+        </div>
+
         <div class="card">
             <div class="card-header">
-                <h3>Tendances combinées</h3>
+                <h3 id="table-title">Tendances combinées</h3>
                 <span id="game-count">Chargement...</span>
             </div>
             <table>
@@ -129,6 +183,8 @@
 
     <script>
         let allGames = [];
+        let currentTab = 'all';
+        let favorites = JSON.parse(localStorage.getItem('gaming_favorites')) || [];
         let sortDirections = { name: 'asc', platform: 'asc', ratio: 'desc' };
 
         async function loadGames() {
@@ -136,32 +192,48 @@
                 const response = await fetch('game.json?t=' + new Date().getTime());
                 allGames = await response.json();
                 
-                // Ajout d'un ratio proportionnel/dynamique pour alimenter la colonne
                 allGames = allGames.map((game, index) => ({
                     ...game,
-                    ratio: (Math.max(1, (101 - (index + 1)) * 0.15)).toFixed(2)
+                    ratio: (Math.max(1, (106 - (index + 1)) * 0.15)).toFixed(2)
                 }));
 
-                renderTable(allGames);
+                renderTable();
             } catch (e) {
                 console.error(e);
                 document.getElementById('games-tbody').innerHTML = `<tr><td colspan="6" style="text-align:center; color: #ef4444;">Erreur de chargement des données.</td></tr>`;
             }
         }
 
-        function renderTable(games) {
+        function renderTable() {
             const tbody = document.getElementById('games-tbody');
             const countSpan = document.getElementById('game-count');
             tbody.innerHTML = '';
-            countSpan.innerText = `${games.length} jeux & catégories`;
 
-            games.forEach((game, index) => {
+            let displayedGames = allGames;
+            if (currentTab === 'favorites') {
+                displayedGames = allGames.filter(game => favorites.includes(game.name));
+            }
+
+            countSpan.innerText = `${displayedGames.length} éléments`;
+            document.getElementById('fav-count').innerText = favorites.length;
+
+            if (displayedGames.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; padding: 40px; color: #94a3b8;">Aucun élément à afficher.</td></tr>`;
+                return;
+            }
+
+            displayedGames.forEach((game, index) => {
                 const rank = index + 1;
                 const tr = document.createElement('tr');
-                let badgeClass = game.platform === 'Twitch' ? 'badge-twitch' : 'badge-steam';
+                
+                let badgeClass = 'badge-twitch';
+                if (game.platform === 'Steam') badgeClass = 'badge-steam';
+                if (game.platform.includes('Mobile')) badgeClass = 'badge-mobile';
+
+                const isFav = favorites.includes(game.name);
 
                 tr.innerHTML = `
-                    <td><button class="fav-btn" onclick="toggleFav(this)">⭐</button></td>
+                    <td><button class="fav-btn ${isFav ? 'fav-active' : ''}" onclick="toggleFav('${game.name.replace(/'/g, "\\'")}')">⭐</button></td>
                     <td><strong>#${rank}</strong></td>
                     <td>
                         <div class="game-cell">
@@ -177,6 +249,24 @@
                 `;
                 tbody.appendChild(tr);
             });
+        }
+
+        function switchTab(tab) {
+            currentTab = tab;
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            document.getElementById('table-title').innerText = tab === 'favorites' ? 'Mes Favoris' : 'Tendances combinées';
+            renderTable();
+        }
+
+        function toggleFav(gameName) {
+            if (favorites.includes(gameName)) {
+                favorites = favorites.filter(name => name !== gameName);
+            } else {
+                favorites.push(gameName);
+            }
+            localStorage.setItem('gaming_favorites', JSON.stringify(favorites));
+            renderTable();
         }
 
         function sortTable(key) {
@@ -196,11 +286,7 @@
             });
 
             sortDirections[key] = direction === 'asc' ? 'desc' : 'asc';
-            renderTable(allGames);
-        }
-
-        function toggleFav(btn) {
-            btn.classList.toggle('fav-active');
+            renderTable();
         }
 
         loadGames();
