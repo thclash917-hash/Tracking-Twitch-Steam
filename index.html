@@ -11,7 +11,6 @@
             --card-bg: #1e293b;
             --text-color: #f8fafc;
             --accent-twitch: #9146ff;
-            --accent-steam: #171a21;
             --success: #22c55e;
             --danger: #ef4444;
         }
@@ -22,10 +21,7 @@
             margin: 0;
             padding: 20px;
         }
-        header {
-            text-align: center;
-            margin-bottom: 30px;
-        }
+        header { text-align: center; margin-bottom: 30px; }
         .chart-container {
             background-color: var(--card-bg);
             padding: 20px;
@@ -39,15 +35,12 @@
             grid-template-columns: 1fr 1fr;
             gap: 20px;
         }
-        @media (max-width: 1024px) {
-            .dashboard-grid { grid-template-columns: 1fr; }
-        }
+        @media (max-width: 1024px) { .dashboard-grid { grid-template-columns: 1fr; } }
         .category-section {
             background-color: var(--card-bg);
             border-radius: 12px;
             padding: 20px;
             box-shadow: 0 4px 6px rgba(0,0,0,0.3);
-            position: relative;
         }
         .category-header {
             display: flex;
@@ -68,47 +61,33 @@
         }
         .nav-arrows button:hover { background: #475569; }
         .table-wrapper {
-            max-height: 400px;
+            max-height: 450px;
             overflow-y: auto;
         }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            text-align: left;
-        }
-        th, td {
-            padding: 10px;
-            border-bottom: 1px solid #334155;
-            font-size: 14px;
-        }
+        table { width: 100%; border-collapse: collapse; text-align: left; }
+        th, td { padding: 8px; border-bottom: 1px solid #334155; font-size: 14px; vertical-align: middle; }
         th { position: sticky; top: 0; background: var(--card-bg); z-index: 1; }
+        .game-img {
+            width: 40px;
+            height: 53px;
+            object-fit: cover;
+            border-radius: 4px;
+        }
         .highlight-brawl {
             background-color: rgba(34, 197, 94, 0.2) !important;
             font-weight: bold;
         }
         .positive { color: var(--success); }
         .negative { color: var(--danger); }
-        .fav-btn {
-            background: none;
-            border: none;
-            cursor: pointer;
-            font-size: 16px;
-        }
+        .fav-btn { background: none; border: none; cursor: pointer; font-size: 16px; }
         .fav-active { color: gold; }
-        .live-drops {
-            background-color: var(--card-bg);
-            border-radius: 12px;
-            padding: 15px;
-            margin-top: 20px;
-            border-left: 4px solid var(--accent-twitch);
-        }
     </style>
 </head>
 <body>
 
     <header>
         <h1>Classement Global Jeux - Twitch & Steam</h1>
-        <p>Rafraîchissement automatique toutes les 30 minutes | Mises à jour des Drops Twitch en direct</p>
+        <p>Mise à jour automatique via GitHub Actions</p>
     </header>
 
     <div class="chart-container">
@@ -116,15 +95,9 @@
         <canvas id="growthChart"></canvas>
     </div>
 
-    <div class="live-drops">
-        <h3>🔴 Drops Twitch Actifs en Direct</h3>
-        <ul id="twitch-drops-list">
-            Chargement des drops en cours...
-        </ul>
-    </div>
-
     <div class="dashboard-grid">
-        <div class="category-section" id="twitch-section">
+        <!-- Twitch -->
+        <div class="category-section">
             <div class="category-header">
                 <h2>Top 100 Twitch</h2>
                 <div class="nav-arrows">
@@ -138,18 +111,20 @@
                         <tr>
                             <th>Fav</th>
                             <th>#</th>
+                            <th>Image</th>
                             <th>Jeu</th>
-                            <th>Specs</th>
                             <th>Variation</th>
                         </tr>
                     </thead>
                     <tbody>
-                        </tbody>
+                        <tr><td colspan="5">Chargement des données Twitch...</td></tr>
+                    </tbody>
                 </table>
             </div>
         </div>
 
-        <div class="category-section" id="steam-section">
+        <!-- Steam -->
+        <div class="category-section">
             <div class="category-header">
                 <h2>Top 100 Steam</h2>
                 <div class="nav-arrows">
@@ -163,25 +138,26 @@
                         <tr>
                             <th>Fav</th>
                             <th>#</th>
+                            <th>Image</th>
                             <th>Jeu</th>
-                            <th>Specs</th>
                             <th>Variation</th>
                         </tr>
                     </thead>
                     <tbody>
-                        </tbody>
+                        <!-- Généré par JS -->
+                    </tbody>
                 </table>
             </div>
         </div>
     </div>
 
     <script>
-        // --- 1. CONFIGURATION DU GRAPHIQUE ---
+        // Graphique
         const ctx = document.getElementById('growthChart').getContext('2d');
-        const growthChart = new Chart(ctx, {
+        new Chart(ctx, {
             type: 'line',
             data: {
-                labels: ['10m', '20m', '30m', '40m', '50m', 'En direct'],
+                labels: ['10m', '20m', '30m', '40m', '50m', 'Actuel'],
                 datasets: [{
                     label: 'Audience Twitch',
                     data: [1200, 1900, 3000, 5000, 4600, 6200],
@@ -197,99 +173,80 @@
             options: {
                 responsive: true,
                 plugins: { legend: { labels: { color: 'white' } } },
-                scales: {
-                    x: { ticks: { color: 'white' } },
-                    y: { ticks: { color: 'white' } }
-                }
+                scales: { x: { ticks: { color: 'white' } }, y: { ticks: { color: 'white' } } }
             }
         });
 
-        // --- 2. DONNÉES ET GÉNÉRATION DES TABLEAUX (100 JEUX) ---
-        function generateGamesData(platformName) {
-            let list = [];
-            for (let i = 1; i <= 100; i++) {
-                let name = `${platformName} Jeu ${i}`;
-                if (i === 15 && platformName === "Twitch") name = "Brawl Stars"; // Forcer Brawl Stars
-                if (i === 42 && platformName === "Steam") name = "Brawl Stars"; // Optionnel sur Steam aussi
-                
-                list.push({
-                    rank: i,
-                    name: name,
-                    specs: `Niveau ${i * 10}`, // Ordre croissant de spécifications
-                    variation: (Math.random() * 20 - 10).toFixed(2) // Variation en % aléatoire
+        // Charger Twitch depuis data.json avec les vraies images
+        async function loadTwitchData() {
+            try {
+                const response = await fetch('data.json');
+                const json = await response.json();
+                const games = json.data || [];
+                const tbody = document.querySelector('#twitch-table tbody');
+                tbody.innerHTML = "";
+
+                games.forEach((game, index) => {
+                    const rank = index + 1;
+                    const tr = document.createElement('tr');
+                    
+                    if (game.name.toLowerCase() === "brawl stars") {
+                        tr.classList.add('highlight-brawl');
+                    }
+
+                    // Formatage de l'URL de l'image Twitch (remplacement de {width}x{height})
+                    let imgUrl = game.box_art_url.replace('{width}', '50').replace('{height}', '70');
+
+                    tr.innerHTML = `
+                        <td><button class="fav-btn" onclick="toggleFav(this)">⭐</button></td>
+                        <td>${rank}</td>
+                        <td><img src="${imgUrl}" class="game-img" alt="${game.name}"></td>
+                        <td>${game.name}</td>
+                        <td class="positive">+0.00%</td>
+                    `;
+                    tbody.appendChild(tr);
                 });
+            } catch (e) {
+                document.querySelector('#twitch-table tbody').innerHTML = `<tr><td colspan="5">En attente des données Twitch...</td></tr>`;
             }
-            return list;
         }
 
-        function renderTable(tableId, data) {
-            const tbody = document.querySelector(`#${tableId} tbody`);
+        // Générer Steam avec de vraies images d'illustration (génériques de jeux ou bannières)
+        function loadSteamData() {
+            const tbody = document.querySelector('#steam-table tbody');
             tbody.innerHTML = "";
-            data.forEach(item => {
+            for (let i = 1; i <= 100; i++) {
+                let name = `Steam Jeu ${i}`;
+                if (i === 42) name = "Brawl Stars";
+                
                 const tr = document.createElement('tr');
-                if (item.name === "Brawl Stars") {
-                    tr.classList.add('highlight-brawl');
-                }
-                const varClass = item.variation >= 0 ? 'positive' : 'negative';
-                const varSign = item.variation >= 0 ? '+' : '';
+                if (name === "Brawl Stars") tr.classList.add('highlight-brawl');
+                
+                // Image placeholder propre pour Steam
+                let steamImg = `https://picsum.photos/50/70?random=${i}`;
 
                 tr.innerHTML = `
                     <td><button class="fav-btn" onclick="toggleFav(this)">⭐</button></td>
-                    <td>${item.rank}</td>
-                    <td>${item.name}</td>
-                    <td>${item.specs}</td>
-                    <td class="${varClass}">${varSign}${item.variation}%</td>
+                    <td>${i}</td>
+                    <td><img src="${steamImg}" class="game-img" alt="${name}"></td>
+                    <td>${name}</td>
+                    <td class="positive">+1.50%</td>
                 `;
                 tbody.appendChild(tr);
-            });
-        }
-
-        const twitchGames = generateGamesData("Twitch");
-        const steamGames = generateGamesData("Steam");
-
-        renderTable('twitch-table', twitchGames);
-        renderTable('steam-table', steamGames);
-
-        // --- 3. NAVIGATION PAR FLECHES ---
-        function scrollTable(tableId, direction) {
-            const wrapper = document.querySelector(`#${tableId}`).parentElement;
-            const scrollAmount = 150;
-            if (direction === 'up') {
-                wrapper.scrollTop -= scrollAmount;
-            } else {
-                wrapper.scrollTop += scrollAmount;
             }
         }
 
-        // --- 4. GESTION DES FAVORIS ---
-        function toggleFav(button) {
-            button.classList.toggle('fav-active');
-            // Logique supplémentaire pour filtrer ou stocker dans le localStorage si besoin
+        function scrollTable(tableId, direction) {
+            const wrapper = document.querySelector(`#${tableId}`).parentElement;
+            wrapper.scrollTop += (direction === 'up' ? -150 : 150);
         }
 
-        // --- 5. SIMULATION DROPS TWITCH EN DIRECT ---
-        function updateTwitchDrops() {
-            const dropsList = document.getElementById('twitch-drops-list');
-            const sampleDrops = [
-                "Valorant : Drop Skin Exclusif activé sur 45 chaînes",
-                "Brawl Stars : Double XP et Drops actifs chez les créateurs partenaires",
-                "Rust : Coffre mystère déblocable après 2h de visionnage",
-                "Grand Theft Auto V : Drops de vêtement RP en cours"
-            ];
-            // Sélection aléatoire d'un drop pour simuler l'actualisation en temps réel
-            const activeDrop = sampleDrops[Math.floor(Math.random() * sampleDrops.length)];
-            dropsList.innerHTML = `<li>⚡ <strong>En direct :</strong> ${activeDrop} <span style="font-size:11px; color:#94a3b8;">(Actualisé à l'instant)</span></li>`;
+        function toggleFav(btn) {
+            btn.classList.toggle('fav-active');
         }
 
-        // --- 6. INTERVALLES DE RAFRAÎCHISSEMENT ---
-        // Actualisation des données globales toutes les 30 minutes (1800000 ms)
-        setInterval(() => {
-            location.reload(); 
-        }, 1800000);
-
-        // Actualisation des drops Twitch en direct (simulé toutes les 45 secondes pour coller au rythme de l'API Twitch)
-        setInterval(updateTwitchDrops, 45000);
-        updateTwitchDrops();
+        loadTwitchData();
+        loadSteamData();
     </script>
 </body>
 </html>
