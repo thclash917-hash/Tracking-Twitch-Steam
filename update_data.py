@@ -22,7 +22,6 @@ def fetch_twitch_games():
         "Authorization": f"Bearer {token}"
     }
     
-    # Récupération du top des jeux sur Twitch
     url = "https://api.twitch.tv/helix/games/top?first=50"
     response = requests.get(url, headers=headers)
     
@@ -30,20 +29,18 @@ def fetch_twitch_games():
     if response.status_code == 200:
         data = response.json().get("data", [])
         for item in data:
-            # Formatage de l'image Twitch (remplacement des dimensions)
             box_art = item.get("box_art_url", "").replace("{width}", "100").replace("{height}", "133")
             games.append({
                 "name": item.get("name"),
                 "platform": "Twitch",
                 "image": box_art,
-                "volume": "Spectateurs en direct" # Peut être relié aux viewers si besoin
+                "volume": "Spectateurs en direct"
             })
     return games
 
 def main():
     twitch_games = fetch_twitch_games()
     
-    # Ajout de quelques jeux Steam de référence avec des images par défaut ou personnalisées
     steam_games = [
         {"name": "Counter-Strike 2", "platform": "Steam", "image": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/730/header.jpg", "volume": "1 084 344 joueurs"},
         {"name": "Dota 2", "platform": "Steam", "image": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/570/header.jpg", "volume": "765 773 joueurs"},
@@ -53,13 +50,12 @@ def main():
         {"name": "Clash of Clans", "platform": "Mobile", "image": "https://picsum.photos/100/133?random=coc", "volume": "Prioritaire"}
     ]
 
-    # Fusion des listes
     all_games = steam_games + twitch_games
 
-    # Enregistrement dans games.json
-    with open("games.json", "w", encoding="utf-8") as f:
+    # Enregistrement direct sous forme de tableau JSON simple
+    with open("data.json", "w", encoding="utf-8") as f:
         json.dump(all_games, f, ensure_ascii=False, indent=4)
-    print(f"Succès : {len(all_games)} jeux enregistrés dans games.json")
+    print(f"Succès : {len(all_games)} jeux enregistrés dans data.json")
 
 if __name__ == "__main__":
     main()
