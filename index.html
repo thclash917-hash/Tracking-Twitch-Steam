@@ -616,7 +616,14 @@
                 }
             });
         }
-
+        function updateChart() {
+            const filterValue = document.getElementById('chart-filter').value;
+            let filtered = allGames;
+            if (filterValue !== 'all') {
+                filtered = allGames.filter(game => game.platform === filterValue || (filterValue === 'Mobile' && game.platform.includes('Mobile')));
+            }
+            renderChart(filtered.slice(0, 6));
+        }
         function renderTable() {
             const tbody = document.getElementById('games-tbody');
             const countSpan = document.getElementById('game-count');
