@@ -64,6 +64,38 @@ def get_app_info(name):
 # bouton "lien direct" dans la fiche détail, aucune valeur/catégorisation modifiée)
 # ---------------------------------------------------------------------------
 
+def fetch_stream_viewers(game_id, headers, max_streams=500):
+    """Compte les spectateurs en paginant au-delà des 100 premiers streams,
+    jusqu'à max_streams, pour être précis même sur les grosses catégories
+    (ex: Just Chatting) qui ont des milliers de streams simultanés."""
+    total_viewers = 0
+    cursor = None
+    fetched = 0
+
+    while fetched < max_streams:
+        streams_url = f"https://api.twitch.tv/helix/streams?game_id={game_id}&first=100"
+        if cursor:
+            streams_url += f"&after={cursor}"
+
+        streams_resp = requests.get(streams_url, headers=headers)
+        if streams_resp.status_code != 200:
+            break
+
+        data = streams_resp.json()
+        streams = data.get("data", [])
+        if not streams:
+            break
+
+        total_viewers += sum(stream["viewer_count"] for stream in streams)
+        fetched += len(streams)
+
+        cursor = data.get("pagination", {}).get("cursor")
+        if not cursor or len(streams) < 100:
+            break
+
+    return total_viewers
+
+
 def get_twitch_token():
     if not CLIENT_ID or not CLIENT_SECRET:
         return None
@@ -118,13 +150,8 @@ def fetch_twitch_games():
         image_url = game.get("box_art_url", "").replace("{width}", "300").replace("{height}", "400")
 
         # Récupérer les streams en direct pour compter les spectateurs réels
-        streams_url = f"https://api.twitch.tv/helix/streams?game_id={game_id}&first=100"
-        streams_resp = requests.get(streams_url, headers=headers)
-
-        viewers = 0
-        if streams_resp.status_code == 200:
-            streams = streams_resp.json().get("data", [])
-            viewers = sum(stream["viewer_count"] for stream in streams)
+        # (pagine jusqu'à 500 streams pour être précis sur les grosses catégories)
+        viewers = fetch_stream_viewers(game_id, headers, max_streams=500)
 
         # Déterminer la plateforme selon le jeu (personnalisable)
         platform = "Twitch"
