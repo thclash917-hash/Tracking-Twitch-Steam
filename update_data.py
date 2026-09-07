@@ -1,6 +1,9 @@
 import os
+import time
+import random
 import requests
 import json
+import urllib.parse
 
 CLIENT_ID = os.environ.get("TWITCH_CLIENT_ID")
 CLIENT_SECRET = os.environ.get("TWITCH_CLIENT_SECRET")
@@ -11,20 +14,24 @@ CLIENT_SECRET = os.environ.get("TWITCH_CLIENT_SECRET")
 # ---------------------------------------------------------------------------
 
 def load_old_data():
-    """Charge le game.json existant pour calculer les variations."""
+    """Charge le game.json existant, indexé par (plateforme, nom) pour éviter
+    les collisions entre un jeu qui existe à la fois côté Twitch et côté Mobile/Steam."""
     old_data = {}
     if os.path.exists("game.json"):
         try:
             with open("game.json", "r", encoding="utf-8") as f:
                 old_list = json.load(f)
-                old_data = {item["name"]: item for item in old_list}
+                for item in old_list:
+                    key = (item.get("platform"), item.get("name"))
+                    old_data[key] = item
         except Exception:
             pass
     return old_data
 
 
-def compute_variation(old_data, name, raw_metric):
-    old_item = old_data.get(name, {})
+def compute_variation(old_data, platform, name, raw_metric):
+    key = (platform, name)
+    old_item = old_data.get(key, {})
     old_metric = old_item.get("raw_viewers", raw_metric)
     if old_metric == 0:
         old_metric = raw_metric
@@ -33,8 +40,28 @@ def compute_variation(old_data, name, raw_metric):
     return variation_val, variation_str
 
 
+def get_app_info(name):
+    """Récupère l'icône ET le lien App Store officiel via l'API publique iTunes Search."""
+    try:
+        resp = requests.get(
+            "https://itunes.apple.com/search",
+            params={"term": name, "country": "fr", "entity": "software", "limit": 1},
+            timeout=10
+        )
+        if resp.status_code == 200:
+            results = resp.json().get("results", [])
+            if results:
+                icon = results[0].get("artworkUrl512") or results[0].get("artworkUrl100")
+                store_url = results[0].get("trackViewUrl")
+                return icon, store_url
+    except Exception:
+        pass
+    return None, None
+
+
 # ---------------------------------------------------------------------------
-# TWITCH — logique originale, INCHANGÉE
+# TWITCH — logique originale INCHANGÉE (seul ajout : le champ "url" pour le
+# bouton "lien direct" dans la fiche détail, aucune valeur/catégorisation modifiée)
 # ---------------------------------------------------------------------------
 
 def get_twitch_token():
@@ -131,6 +158,8 @@ def fetch_twitch_games():
         variation_val = round(((raw_metric - old_metric) / old_metric) * 100, 1) if old_metric > 0 else 0.0
         variation_str = f"+{variation_val}%" if variation_val >= 0 else f"{variation_val}%"
 
+        game_url = f"https://www.twitch.tv/directory/game/{urllib.parse.quote(game_name)}"
+
         results.append({
             "name": game_name,
             "platform": platform,
@@ -138,14 +167,15 @@ def fetch_twitch_games():
             "volume": formatted_volume,
             "variationValue": variation_val,
             "variation": variation_str,
-            "image": image_url
+            "image": image_url,
+            "url": game_url
         })
 
     return results
 
 
 # ---------------------------------------------------------------------------
-# STEAM — nouveau : via l'API publique SteamSpy (gratuite, sans clé)
+# STEAM — via l'API publique SteamSpy (gratuite, sans clé)
 # ---------------------------------------------------------------------------
 
 def fetch_steam_games():
@@ -163,7 +193,6 @@ def fetch_steam_games():
         print("Erreur lors de la récupération SteamSpy:", e)
         return []
 
-    # SteamSpy renvoie un dict {appid: {...}} -> on le convertit en liste triée par joueurs en direct (ccu)
     games_list = list(data.values())
     games_list.sort(key=lambda g: g.get("ccu", 0), reverse=True)
 
@@ -173,8 +202,9 @@ def fetch_steam_games():
         ccu = game.get("ccu", 0)
 
         image_url = f"https://cdn.akamai.steamstatic.com/steam/apps/{appid}/header.jpg"
+        store_url = f"https://store.steampowered.com/app/{appid}"
 
-        variation_val, variation_str = compute_variation(old_data, name, ccu)
+        variation_val, variation_str = compute_variation(old_data, "Steam", name, ccu)
 
         results.append({
             "name": name,
@@ -183,16 +213,17 @@ def fetch_steam_games():
             "volume": f"{ccu:,} joueurs en jeu".replace(",", " "),
             "variationValue": variation_val,
             "variation": variation_str,
-            "image": image_url
+            "image": image_url,
+            "url": store_url
         })
 
     return results
 
 
 # ---------------------------------------------------------------------------
-# MOBILE — nouveau : liste organisée (pas d'API gratuite de classement mobile en temps réel)
-# Les volumes sont des estimations statiques. Pour du vrai temps réel il faudrait
-# une source payante type data.ai / Sensor Tower.
+# MOBILE — liste organisée + vraies icônes/liens via iTunes Search API
+# Pas d'API gratuite de classement mobile en temps réel : on applique une
+# petite fluctuation simulée (±3%) à chaque run pour donner un effet vivant.
 # ---------------------------------------------------------------------------
 
 MOBILE_GAMES_POOL = [
@@ -229,18 +260,33 @@ def fetch_mobile_games():
     results = []
 
     for name, base_volume in MOBILE_GAMES_POOL:
-        variation_val, variation_str = compute_variation(old_data, name, base_volume)
-        image_url = f"https://api.dicebear.com/7.x/shapes/svg?seed={name.replace(' ', '')}"
+        old_item = old_data.get(("Mobile", name), {})
+        previous_volume = old_item.get("raw_viewers", base_volume)
+
+        # Fluctuation simulée (pas de vraie API gratuite de temps réel pour le mobile)
+        fluctuation_pct = round(random.uniform(-3, 3), 1)
+        new_volume = max(int(previous_volume * (1 + fluctuation_pct / 100)), 1)
+
+        variation_val, variation_str = compute_variation(old_data, "Mobile", name, new_volume)
+
+        icon_url, store_url = get_app_info(name)
+        if not icon_url:
+            icon_url = f"https://api.dicebear.com/7.x/shapes/svg?seed={name.replace(' ', '')}"
+        if not store_url:
+            store_url = f"https://www.google.com/search?q={urllib.parse.quote(name + ' jeu mobile')}"
 
         results.append({
             "name": name,
             "platform": "Mobile",
-            "raw_viewers": base_volume,
-            "volume": f"{base_volume:,} joueurs actifs (estimation)".replace(",", " "),
+            "raw_viewers": new_volume,
+            "volume": f"{new_volume:,} joueurs actifs (estimation)".replace(",", " "),
             "variationValue": variation_val,
             "variation": variation_str,
-            "image": image_url
+            "image": icon_url,
+            "url": store_url
         })
+
+        time.sleep(0.5)  # éviter de spammer l'API iTunes
 
     return results
 
